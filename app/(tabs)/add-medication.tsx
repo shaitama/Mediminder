@@ -2,6 +2,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import {
+  ColorValue,
   Modal,
   Platform,
   TextInput as RNTextInput,
@@ -9,16 +10,16 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   View,
 } from "react-native";
 
 export default function AddMedication() {
   const [medicationName, setMedicationName] = useState<string>("");
-  const [dosage, setDosage] = useState<string>("");
+  const [dosage, setDosage] = useState<number | null>(null);
   const [dosageUnit, setDosageUnit] = useState<string>("mg");
   const [frequency, setFrequency] = useState<string>("");
-  const [customFrequency, setCustomFrequency] = useState<string>("");
+  const [customInterval, setCustomInterval] = useState<string>("");
+  const [customIntervalUnit, setCustomIntervalUnit] = useState<string>("hours");
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [reminderTime, setReminderTime] = useState<Date>(new Date());
@@ -29,32 +30,47 @@ export default function AddMedication() {
   const [showReminderTime, setShowReminderTime] = useState<boolean>(false);
   const [showUnitDropdown, setShowUnitDropdown] = useState<boolean>(false);
   const [showFrequencyDropdown, setShowFrequencyDropdown] = useState<boolean>(false);
+  const [showIntervalUnitDropdown, setShowIntervalUnitDropdown] = useState<boolean>(false);
 
   const dosageUnits: string[] = ["mg", "ml", "g", "tablet", "capsule"];
   const frequencyOptions: string[] = [
     "Once a day",
     "Twice a day",
-    "Thrice a day",
     "Every 6 hours",
     "Every 8 hours",
     "Custom"
   ];
+  const intervalUnits: string[] = ["hours", "days"];
 
+  // Define color theme with proper typing
+  const colors: [ColorValue, ColorValue] = ["#667eea", "#764ba2"];
+
+  // Simplified dosage change handler
   const handleDosageChange = (text: string): void => {
-    const numericText = text.replace(/[^0-9]/g, '');
-    setDosage(numericText);
+    // Convert to number, or set to null if empty
+    if (text === "") {
+      setDosage(null);
+    } else {
+      const numericValue = parseFloat(text);
+      // Only update if it's a valid number
+      if (!isNaN(numericValue)) {
+        setDosage(numericValue);
+      }
+    }
   };
 
   const isFormValid: boolean = 
     medicationName.trim() !== "" && 
-    dosage.trim() !== "" && 
-    (frequency !== "Custom" ? frequency !== "" : customFrequency.trim() !== "") && 
+    dosage !== null && 
+    (frequency !== "Custom" ? frequency !== "" : customInterval.trim() !== "") && 
     startDate !== null && 
     endDate !== null && 
     reminderTime !== null;
 
   const handleSubmit = (): void => {
-    const finalFrequency: string = frequency === "Custom" ? customFrequency : frequency;
+    const finalFrequency: string = frequency === "Custom" 
+      ? `Every ${customInterval} ${customIntervalUnit}` 
+      : frequency;
     
     const medicationData = {
       medicationName,
@@ -70,39 +86,63 @@ export default function AddMedication() {
     alert("Medication successfully added!");
     
     setMedicationName("");
-    setDosage("");
+    setDosage(null);
     setDosageUnit("mg");
     setFrequency("");
-    setCustomFrequency("");
+    setCustomInterval("");
+    setCustomIntervalUnit("hours");
     setStartDate(new Date());
     setEndDate(new Date());
     setReminderTime(new Date());
     setNotes("");
   };
 
+  // Format date in Philippine format (MM/DD/YYYY)
   const formatDate = (date: Date): string => {
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString('en-PH', {
       year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+      month: '2-digit',
+      day: '2-digit'
     });
   };
 
+  // Format time in Philippine format (12-hour with AM/PM)
   const formatTime = (date: Date): string => {
-    return date.toLocaleTimeString('en-US', {
+    return date.toLocaleTimeString('en-PH', {
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      hour12: true
     });
+  };
+
+  // Calculate reminder interval based on frequency
+  const getReminderInterval = (): string => {
+    switch(frequency) {
+      case "Once a day":
+        return "Every 24 hours";
+      case "Twice a day":
+        return "Every 12 hours";
+      case "Every 6 hours":
+        return "Every 6 hours";
+      case "Every 8 hours":
+        return "Every 8 hours";
+      case "Custom":
+        return customInterval ? `Every ${customInterval} ${customIntervalUnit}` : "Set custom interval";
+      default:
+        return "Select frequency first";
+    }
   };
 
   return (
-    <LinearGradient colors={["#667eea", "#764ba2"]} style={styles.container}>
+    <LinearGradient colors={colors} style={styles.container}>
+      <View style={styles.stickyHeader}>
+        <Text style={styles.header}>Add Medication</Text>
+      </View>
+      
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.header}>Add Medication</Text>
-
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Medication Name</Text>
           <View style={styles.textInput}>
@@ -119,9 +159,9 @@ export default function AddMedication() {
         <View style={styles.row}>
           <View style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}>
             <Text style={styles.inputLabel}>Dosage</Text>
-            <View style={styles.textInput}>
+            <View style={[styles.textInput, styles.fixedHeight]}>
               <RNTextInput
-                value={dosage}
+                value={dosage === null ? "" : dosage.toString()}
                 onChangeText={handleDosageChange}
                 keyboardType="numeric"
                 style={styles.inputField}
@@ -134,97 +174,92 @@ export default function AddMedication() {
           <View style={[styles.inputContainer, { flex: 1, marginLeft: 8 }]}>
             <Text style={styles.inputLabel}>Unit</Text>
             <TouchableOpacity 
-              style={styles.dropdownButton}
-              onPress={() => setShowUnitDropdown(true)}
+              style={[styles.dropdownButton, styles.fixedHeight]}
+              onPress={() => {
+                setShowFrequencyDropdown(false);
+                setShowIntervalUnitDropdown(false);
+                setShowUnitDropdown(!showUnitDropdown);
+              }}
             >
               <Text style={styles.dropdownText}>{dosageUnit}</Text>
-              <Text style={styles.dropdownArrow}>▼</Text>
+              <Text style={styles.dropdownArrow}>
+                {showUnitDropdown ? "▲" : "▼"}
+              </Text>
             </TouchableOpacity>
-
-            <Modal
-              transparent
-              visible={showUnitDropdown}
-              animationType="fade"
-              onRequestClose={() => setShowUnitDropdown(false)}
-            >
-              <TouchableWithoutFeedback onPress={() => setShowUnitDropdown(false)}>
-                <View style={styles.modalOverlay}>
-                  <View style={styles.dropdownOptions}>
-                    {dosageUnits.map((unit, index) => (
-                      <TouchableOpacity
-                        key={index}
-                        style={styles.optionItem}
-                        onPress={() => {
-                          setDosageUnit(unit);
-                          setShowUnitDropdown(false);
-                        }}
-                      >
-                        <Text style={styles.optionText}>{unit}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
-              </TouchableWithoutFeedback>
-            </Modal>
           </View>
         </View>
 
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Frequency</Text>
           <TouchableOpacity 
-            style={styles.dropdownButton}
-            onPress={() => setShowFrequencyDropdown(true)}
+            style={[styles.dropdownButton, styles.fixedHeight]}
+            onPress={() => {
+              setShowUnitDropdown(false);
+              setShowIntervalUnitDropdown(false);
+              setShowFrequencyDropdown(!showFrequencyDropdown);
+            }}
           >
             <Text style={styles.dropdownText}>{frequency || "Select frequency"}</Text>
-            <Text style={styles.dropdownArrow}>▼</Text>
+            <Text style={styles.dropdownArrow}>
+              {showFrequencyDropdown ? "▲" : "▼"}
+            </Text>
           </TouchableOpacity>
-
-          <Modal
-            transparent
-            visible={showFrequencyDropdown}
-            animationType="fade"
-            onRequestClose={() => setShowFrequencyDropdown(false)}
-          >
-            <TouchableWithoutFeedback onPress={() => setShowFrequencyDropdown(false)}>
-              <View style={styles.modalOverlay}>
-                <View style={styles.dropdownOptions}>
-                  {frequencyOptions.map((option, index) => (
-                    <TouchableOpacity
-                      key={index}
-                      style={styles.optionItem}
-                      onPress={() => {
-                        setFrequency(option);
-                        setShowFrequencyDropdown(false);
-                      }}
-                    >
-                      <Text style={styles.optionText}>{option}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-            </TouchableWithoutFeedback>
-          </Modal>
 
           {frequency === "Custom" && (
             <View style={[styles.inputContainer, { marginTop: 10 }]}>
-              <Text style={styles.inputLabel}>Custom Frequency</Text>
-              <View style={styles.textInput}>
-                <RNTextInput
-                  value={customFrequency}
-                  onChangeText={setCustomFrequency}
-                  style={styles.inputField}
-                  placeholder="e.g. Every 4 hours after meals"
-                  placeholderTextColor="#999"
-                />
+              <Text style={styles.inputLabel}>Custom Interval</Text>
+              <View style={styles.row}>
+                <View style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}>
+                  <View style={[styles.textInput, styles.fixedHeight]}>
+                    <RNTextInput
+                      value={customInterval}
+                      onChangeText={setCustomInterval}
+                      keyboardType="numeric"
+                      style={styles.inputField}
+                      placeholder="e.g. 4"
+                      placeholderTextColor="#999"
+                    />
+                  </View>
+                </View>
+                <View style={[styles.inputContainer, { flex: 1, marginLeft: 8 }]}>
+                  <TouchableOpacity 
+                    style={[styles.dropdownButton, styles.fixedHeight]}
+                    onPress={() => {
+                      setShowUnitDropdown(false);
+                      setShowFrequencyDropdown(false);
+                      setShowIntervalUnitDropdown(!showIntervalUnitDropdown);
+                    }}
+                  >
+                    <Text style={styles.dropdownText}>{customIntervalUnit}</Text>
+                    <Text style={styles.dropdownArrow}>
+                      {showIntervalUnitDropdown ? "▲" : "▼"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           )}
         </View>
 
+        {/* Reminder section - moved under frequency */}
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Reminder</Text>
+          <View style={[styles.reminderBox, styles.fixedHeight]}>
+            <Text style={styles.reminderText}>
+              {frequency ? getReminderInterval() : "Select frequency first"}
+            </Text>
+          </View>
+          <Text style={styles.reminderNote}>
+            {frequency ? 
+              "Reminders will be set based on the frequency you selected" : 
+              "Reminder interval will be determined by the frequency"}
+          </Text>
+        </View>
+
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Start Date</Text>
           <TouchableOpacity 
-            style={styles.dateButton}
+            style={[styles.dateButton, styles.fixedHeight]}
             onPress={() => setShowStartDate(true)}
           >
             <Text style={styles.dateButtonText}>{formatDate(startDate)}</Text>
@@ -234,6 +269,8 @@ export default function AddMedication() {
               value={startDate}
               mode="date"
               display={Platform.OS === "ios" ? "spinner" : "default"}
+              themeVariant="light"
+              textColor="#764ba2"
               onChange={(event, selectedDate) => {
                 setShowStartDate(Platform.OS === "ios");
                 if (selectedDate) {
@@ -247,7 +284,7 @@ export default function AddMedication() {
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>End Date</Text>
           <TouchableOpacity 
-            style={styles.dateButton}
+            style={[styles.dateButton, styles.fixedHeight]}
             onPress={() => setShowEndDate(true)}
           >
             <Text style={styles.dateButtonText}>{formatDate(endDate)}</Text>
@@ -257,6 +294,8 @@ export default function AddMedication() {
               value={endDate}
               mode="date"
               display={Platform.OS === "ios" ? "spinner" : "default"}
+              themeVariant="light"
+              textColor="#764ba2"
               onChange={(event, selectedDate) => {
                 setShowEndDate(Platform.OS === "ios");
                 if (selectedDate) {
@@ -268,9 +307,9 @@ export default function AddMedication() {
         </View>
 
         <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Reminder Time</Text>
+          <Text style={styles.inputLabel}>First Reminder Time</Text>
           <TouchableOpacity 
-            style={styles.dateButton}
+            style={[styles.dateButton, styles.fixedHeight]}
             onPress={() => setShowReminderTime(true)}
           >
             <Text style={styles.dateButtonText}>{formatTime(reminderTime)}</Text>
@@ -280,6 +319,8 @@ export default function AddMedication() {
               value={reminderTime}
               mode="time"
               display={Platform.OS === "ios" ? "spinner" : "default"}
+              themeVariant="light"
+              textColor="#764ba2"
               onChange={(event, selectedTime) => {
                 setShowReminderTime(Platform.OS === "ios");
                 if (selectedTime) {
@@ -288,6 +329,9 @@ export default function AddMedication() {
               }}
             />
           )}
+          <Text style={styles.reminderNote}>
+            This will be the time for your first reminder. Subsequent reminders will follow the frequency pattern.
+          </Text>
         </View>
 
         <View style={styles.inputContainer}>
@@ -312,6 +356,99 @@ export default function AddMedication() {
           <Text style={styles.submitButtonText}>Add Medication</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      {/* Unit Dropdown Modal */}
+      <Modal
+        visible={showUnitDropdown}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowUnitDropdown(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowUnitDropdown(false)}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.dropdownOptions}>
+              {dosageUnits.map((unit, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.optionItem}
+                  onPress={() => {
+                    setDosageUnit(unit);
+                    setShowUnitDropdown(false);
+                  }}
+                >
+                  <Text style={styles.optionText}>{unit}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Frequency Dropdown Modal */}
+      <Modal
+        visible={showFrequencyDropdown}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowFrequencyDropdown(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowFrequencyDropdown(false)}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.dropdownOptions}>
+              {frequencyOptions.map((option, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.optionItem}
+                  onPress={() => {
+                    setFrequency(option);
+                    setShowFrequencyDropdown(false);
+                  }}
+                >
+                  <Text style={styles.optionText}>{option}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Interval Unit Dropdown Modal */}
+      <Modal
+        visible={showIntervalUnitDropdown}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowIntervalUnitDropdown(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowIntervalUnitDropdown(false)}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.dropdownOptions}>
+              {intervalUnits.map((unit, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.optionItem}
+                  onPress={() => {
+                    setCustomIntervalUnit(unit);
+                    setShowIntervalUnitDropdown(false);
+                  }}
+                >
+                  <Text style={styles.optionText}>{unit}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </LinearGradient>
   );
 }
@@ -320,20 +457,29 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  stickyHeader: {
+    paddingTop: Platform.OS === 'ios' ? 50 : 30,
+    paddingHorizontal: 20,
+    paddingBottom: 15,
+    backgroundColor: '#667eea',
+    zIndex: 100,
+  },
   scrollContent: {
     padding: 20,
-    paddingTop: 60,
+    paddingTop: 10,
+    paddingBottom: 40,
   },
   header: {
     fontSize: 26,
     fontFamily: "SpaceMono",
     fontWeight: "bold",
     color: "#fff",
-    marginBottom: 30,
     textAlign: "center",
   },
   inputContainer: {
     marginBottom: 20,
+    position: 'relative',
+    zIndex: 1,
   },
   inputLabel: {
     fontSize: 16,
@@ -345,7 +491,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 12,
     paddingHorizontal: 15,
-    paddingVertical: 12,
+    justifyContent: 'center',
   },
   inputField: {
     fontSize: 16,
@@ -363,7 +509,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 12,
     paddingHorizontal: 15,
-    paddingVertical: 12,
+    zIndex: 5,
   },
   dropdownText: {
     fontSize: 16,
@@ -374,17 +520,28 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#764ba2",
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
   dropdownOptions: {
     backgroundColor: "#fff",
     borderRadius: 12,
-    width: "80%",
-    maxHeight: 300,
+    marginTop: 5,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 10,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '80%',
+    maxHeight: '60%',
   },
   optionItem: {
     padding: 15,
@@ -399,12 +556,34 @@ const styles = StyleSheet.create({
   dateButton: {
     backgroundColor: "#fff",
     borderRadius: 12,
-    padding: 15,
+    paddingHorizontal: 15,
+    justifyContent: 'center',
+    zIndex: 1,
   },
   dateButtonText: {
     fontSize: 16,
     fontFamily: "SpaceMono",
     color: "#333",
+  },
+  reminderBox: {
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  reminderText: {
+    fontSize: 16,
+    fontFamily: "SpaceMono",
+    color: "#333",
+    fontWeight: '600',
+  },
+  reminderNote: {
+    fontSize: 12,
+    fontFamily: "SpaceMono",
+    color: "rgba(255, 255, 255, 0.8)",
+    marginTop: 5,
+    fontStyle: 'italic',
   },
   submitButton: {
     backgroundColor: "#28a745",
@@ -412,6 +591,7 @@ const styles = StyleSheet.create({
     padding: 15,
     alignItems: "center",
     marginTop: 10,
+    zIndex: 1,
   },
   disabledButton: {
     backgroundColor: "#ccc",
@@ -421,5 +601,8 @@ const styles = StyleSheet.create({
     fontFamily: "SpaceMono",
     fontWeight: "bold",
     color: "#fff",
+  },
+  fixedHeight: {
+    height: 48,
   },
 });

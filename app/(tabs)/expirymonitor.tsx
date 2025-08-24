@@ -23,7 +23,7 @@ const medications = [
     name: "Lisinopril", 
     dosage: "10mg", 
     expiryDate: new Date(2025, 8, 14), // Sep 14, 2025
-    status: "Expiring in 7 Days"
+    status: "Expiring in a Few Days"
   },
   { 
     id: "3", 
@@ -36,7 +36,7 @@ const medications = [
     id: "4", 
     name: "Vitamin D3", 
     dosage: "1000IU", 
-    expiryDate: new Date(2025, 10, 29), // Nov 29, 2025
+    expiryDate: new Date(2025, 7, 29), // Aug 29, 2025
     status: "Safe"
   },
   { 
@@ -44,7 +44,7 @@ const medications = [
     name: "Atorvastatin", 
     dosage: "20mg", 
     expiryDate: new Date(2025, 6, 15), // Jul 15, 2025
-    status: "Expiring in 7 Days"
+    status: "Expiring in a Few Days"
   },
 ];
 
@@ -56,14 +56,19 @@ const formatDate = (date: Date): string => {
   });
 };
 
-const getStatus = (expiryDate: Date): string => {
+const getStatusInfo = (expiryDate: Date): {status: string, daysLeft: number} => {
   const today = new Date();
-  const diffTime = Math.abs(expiryDate.getTime() - today.getTime());
+  today.setHours(0, 0, 0, 0); // Reset time part to compare dates only
+  
+  const expiry = new Date(expiryDate);
+  expiry.setHours(0, 0, 0, 0);
+  
+  const diffTime = expiry.getTime() - today.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   
-  if (expiryDate < today) return "Expired";
-  if (diffDays <= 7) return "Expiring in 7 Days";
-  return "Safe";
+  if (diffDays < 0) return {status: "Expired", daysLeft: 0};
+  if (diffDays <= 7) return {status: `Expiring in ${diffDays} day${diffDays !== 1 ? 's' : ''}`, daysLeft: diffDays};
+  return {status: "Safe", daysLeft: diffDays};
 };
 
 export default function ExpiryMonitor() {
@@ -72,36 +77,26 @@ export default function ExpiryMonitor() {
 
   const updatedMeds = medications.map(med => ({
     ...med,
-    status: getStatus(med.expiryDate)
+    ...getStatusInfo(med.expiryDate)
   }));
 
   const filteredMeds = updatedMeds.filter(med => {
     if (filter === "All") return true;
-    if (filter === "Expiring Soon") return med.status === "Expiring in 7 Days";
+    if (filter === "Expiring Soon") return med.status.startsWith("Expiring in");
     if (filter === "Expired") return med.status === "Expired";
     return true;
   });
 
   const getStatusStyle = (status: string) => {
-    switch(status) {
-      case "Expired":
-        return styles.expiredStatus;
-      case "Expiring in 7 Days":
-        return styles.expiringStatus;
-      default:
-        return styles.safeStatus;
-    }
+    if (status === "Expired") return styles.expiredStatus;
+    if (status.startsWith("Expiring in")) return styles.expiringStatus;
+    return styles.safeStatus;
   };
 
   const getStatusEmoji = (status: string): string => {
-    switch(status) {
-      case "Expired":
-        return "💷";
-      case "Expiring in 7 Days":
-        return "💯";
-      default:
-        return "💬";
-    }
+    if (status === "Expired") return "💀";
+    if (status.startsWith("Expiring in")) return "❗";
+    return "✔";
   };
 
   return (
