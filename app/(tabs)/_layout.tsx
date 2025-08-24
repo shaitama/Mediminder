@@ -6,8 +6,8 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#2563eb", // Tailwind blue-600
-        tabBarInactiveTintColor: "#94a3b8", // gray-400
+        tabBarActiveTintColor: "#2563eb",
+        tabBarInactiveTintColor: "#94a3b8",
         tabBarStyle: {
           borderTopLeftRadius: 20,
           borderTopRightRadius: 20,

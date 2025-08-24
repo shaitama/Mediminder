@@ -1,17 +1,7 @@
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
-import {
-  ColorValue,
-  Modal,
-  Platform,
-  TextInput as RNTextInput,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ColorValue, Modal, Platform, TextInput as RNTextInput, ScrollView, StyleSheet, Text, TouchableOpacity, View, } from "react-native";
 
 export default function AddMedication() {
   const [medicationName, setMedicationName] = useState<string>("");
@@ -42,17 +32,13 @@ export default function AddMedication() {
   ];
   const intervalUnits: string[] = ["hours", "days"];
 
-  // Define color theme with proper typing
   const colors: [ColorValue, ColorValue] = ["#667eea", "#764ba2"];
 
-  // Simplified dosage change handler
   const handleDosageChange = (text: string): void => {
-    // Convert to number, or set to null if empty
     if (text === "") {
       setDosage(null);
     } else {
       const numericValue = parseFloat(text);
-      // Only update if it's a valid number
       if (!isNaN(numericValue)) {
         setDosage(numericValue);
       }
@@ -97,7 +83,6 @@ export default function AddMedication() {
     setNotes("");
   };
 
-  // Format date in Philippine format (MM/DD/YYYY)
   const formatDate = (date: Date): string => {
     return date.toLocaleDateString('en-PH', {
       year: 'numeric',
@@ -106,7 +91,6 @@ export default function AddMedication() {
     });
   };
 
-  // Format time in Philippine format (12-hour with AM/PM)
   const formatTime = (date: Date): string => {
     return date.toLocaleTimeString('en-PH', {
       hour: '2-digit',
@@ -115,7 +99,6 @@ export default function AddMedication() {
     });
   };
 
-  // Calculate reminder interval based on frequency
   const getReminderInterval = (): string => {
     switch(frequency) {
       case "Once a day":
@@ -241,7 +224,6 @@ export default function AddMedication() {
           )}
         </View>
 
-        {/* Reminder section - moved under frequency */}
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Reminder</Text>
           <View style={[styles.reminderBox, styles.fixedHeight]}>
@@ -357,7 +339,6 @@ export default function AddMedication() {
         </TouchableOpacity>
       </ScrollView>
 
-      {/* Unit Dropdown Modal */}
       <Modal
         visible={showUnitDropdown}
         transparent={true}
@@ -388,7 +369,6 @@ export default function AddMedication() {
         </TouchableOpacity>
       </Modal>
 
-      {/* Frequency Dropdown Modal */}
       <Modal
         visible={showFrequencyDropdown}
         transparent={true}
@@ -419,7 +399,6 @@ export default function AddMedication() {
         </TouchableOpacity>
       </Modal>
 
-      {/* Interval Unit Dropdown Modal */}
       <Modal
         visible={showIntervalUnitDropdown}
         transparent={true}

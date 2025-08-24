@@ -1,15 +1,7 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
-import {
-  FlatList,
-  StyleSheet,
-  Switch,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { FlatList, StyleSheet, Switch, Text, TouchableOpacity, View, } from "react-native";
 
-// Sample medication data with expiry dates
 const medications = [
   { 
     id: "1", 
@@ -58,7 +50,7 @@ const formatDate = (date: Date): string => {
 
 const getStatusInfo = (expiryDate: Date): {status: string, daysLeft: number} => {
   const today = new Date();
-  today.setHours(0, 0, 0, 0); // Reset time part to compare dates only
+  today.setHours(0, 0, 0, 0);
   
   const expiry = new Date(expiryDate);
   expiry.setHours(0, 0, 0, 0);
@@ -102,8 +94,7 @@ export default function ExpiryMonitor() {
   return (
     <LinearGradient colors={["#667eea", "#764ba2"]} style={styles.container}>
       <Text style={styles.header}>Medication Expiry Monitor</Text>
-      
-      {/* Filter Options */}
+
       <View style={styles.filterContainer}>
         <TouchableOpacity 
           style={[styles.filterButton, filter === "All" && styles.activeFilter]}
@@ -132,8 +123,7 @@ export default function ExpiryMonitor() {
           </Text>
         </TouchableOpacity>
       </View>
-      
-      {/* Medication List */}
+
       <FlatList
         data={filteredMeds}
         keyExtractor={(item) => item.id}
@@ -158,8 +148,7 @@ export default function ExpiryMonitor() {
           </View>
         )}
       />
-      
-      {/* Expiry Alerts Toggle */}
+
       <View style={styles.alertContainer}>
         <Text style={styles.alertText}>Enable Expiry Alerts</Text>
         <Switch
