@@ -439,9 +439,10 @@ const styles = StyleSheet.create({
   stickyHeader: {
     paddingTop: Platform.OS === 'ios' ? 50 : 30,
     paddingHorizontal: 20,
-    paddingBottom: 15,
-    backgroundColor: '#667eea',
+    backgroundColor: '#6677e1',
     zIndex: 100,
+    height: 112,
+    justifyContent: 'center',
   },
   scrollContent: {
     padding: 20,
@@ -453,6 +454,7 @@ const styles = StyleSheet.create({
     fontFamily: "SpaceMono",
     fontWeight: "bold",
     color: "#fff",
+    alignItems: "center",
     textAlign: "center",
   },
   inputContainer: {
