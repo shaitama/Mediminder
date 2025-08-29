@@ -1,7 +1,21 @@
 import DateTimePicker from "@react-native-community/datetimepicker";
+import * as FileSystem from 'expo-file-system';
+import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
-import { ColorValue, Modal, Platform, TextInput as RNTextInput, ScrollView, StyleSheet, Text, TouchableOpacity, View, } from "react-native";
+import {
+  Alert,
+  ColorValue,
+  Image,
+  Modal,
+  Platform,
+  TextInput as RNTextInput,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from "react-native";
 
 export default function AddMedication() {
   const [medicationName, setMedicationName] = useState<string>("");
@@ -14,6 +28,7 @@ export default function AddMedication() {
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [reminderTime, setReminderTime] = useState<Date>(new Date());
   const [notes, setNotes] = useState<string>("");
+  const [medicineImage, setMedicineImage] = useState<string | null>(null);
 
   const [showStartDate, setShowStartDate] = useState<boolean>(false);
   const [showEndDate, setShowEndDate] = useState<boolean>(false);
@@ -45,6 +60,53 @@ export default function AddMedication() {
     }
   };
 
+  const pickImage = async (): Promise<void> => {
+    // Request permissions
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (status !== 'granted') {
+      Alert.alert('Permission required', 'Sorry, we need camera roll permissions to select an image.');
+      return;
+    }
+
+    // Launch image picker
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setMedicineImage(result.assets[0].uri);
+    }
+  };
+
+  const takePhoto = async (): Promise<void> => {
+    // Request permissions
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    
+    if (status !== 'granted') {
+      Alert.alert('Permission required', 'Sorry, we need camera permissions to take a photo.');
+      return;
+    }
+
+    // Launch camera
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setMedicineImage(result.assets[0].uri);
+    }
+  };
+
+  const removeImage = (): void => {
+    setMedicineImage(null);
+  };
+
   const isFormValid: boolean = 
     medicationName.trim() !== "" && 
     dosage !== null && 
@@ -53,10 +115,22 @@ export default function AddMedication() {
     endDate !== null && 
     reminderTime !== null;
 
-  const handleSubmit = (): void => {
+  const handleSubmit = async (): Promise<void> => {
     const finalFrequency: string = frequency === "Custom" 
       ? `Every ${customInterval} ${customIntervalUnit}` 
       : frequency;
+    
+    // If there's an image, convert it to base64 for storage
+    let imageBase64 = null;
+    if (medicineImage) {
+      try {
+        imageBase64 = await FileSystem.readAsStringAsync(medicineImage, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+      } catch (error) {
+        console.error("Error converting image to base64:", error);
+      }
+    }
     
     const medicationData = {
       medicationName,
@@ -66,11 +140,13 @@ export default function AddMedication() {
       endDate,
       reminderTime,
       notes,
+      image: imageBase64,
     };
 
     console.log("Medication Added:", medicationData);
     alert("Medication successfully added!");
     
+    // Reset form
     setMedicationName("");
     setDosage(null);
     setDosageUnit("mg");
@@ -81,6 +157,7 @@ export default function AddMedication() {
     setEndDate(new Date());
     setReminderTime(new Date());
     setNotes("");
+    setMedicineImage(null);
   };
 
   const formatDate = (date: Date): string => {
@@ -128,7 +205,7 @@ export default function AddMedication() {
       >
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Medication Name</Text>
-          <View style={styles.textInput}>
+          <View style={[styles.textInput, styles.fixedHeight]}>
             <RNTextInput
               value={medicationName}
               onChangeText={setMedicationName}
@@ -136,6 +213,31 @@ export default function AddMedication() {
               placeholder="Enter medication name"
               placeholderTextColor="#999"
             />
+          </View>
+        </View>
+
+        {/* Medicine Image Section - Moved below medication name */}
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Medicine Image (optional)</Text>
+          <View style={styles.imageContainer}>
+            {medicineImage ? (
+              <View style={styles.imagePreviewContainer}>
+                <Image source={{ uri: medicineImage }} style={styles.imagePreview} />
+                <TouchableOpacity style={styles.removeImageButton} onPress={removeImage}>
+                  <Text style={styles.removeImageText}>×</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.imageButtonsContainer}>
+                <TouchableOpacity style={[styles.imageButton, styles.fixedHeight]} onPress={pickImage}>
+                  <Text style={styles.imageButtonText}>Choose from Gallery</Text>
+                </TouchableOpacity>
+                <Text style={styles.imageButtonOr}>or</Text>
+                <TouchableOpacity style={[styles.imageButton, styles.fixedHeight]} onPress={takePhoto}>
+                  <Text style={styles.imageButtonText}>Take a Photo</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </View>
 
@@ -585,5 +687,59 @@ const styles = StyleSheet.create({
   },
   fixedHeight: {
     height: 48,
+  },
+  imageContainer: {
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    borderRadius: 12,
+    padding: 15,
+    alignItems: 'center',
+  },
+  imagePreviewContainer: {
+    position: 'relative',
+    alignItems: 'center',
+  },
+  imagePreview: {
+    width: 150,
+    height: 120,
+    borderRadius: 8,
+    resizeMode: 'cover',
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: -10,
+    right: -10,
+    backgroundColor: '#ff4444',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  removeImageText: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  imageButtonsContainer: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  imageButton: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+  },
+  imageButtonText: {
+    fontSize: 14,
+    fontFamily: "SpaceMono",
+    color: "#333",
+  },
+  imageButtonOr: {
+    color: 'white',
+    marginVertical: 8,
+    fontStyle: 'italic',
   },
 });

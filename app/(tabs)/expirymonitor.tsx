@@ -1,92 +1,110 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
-import { FlatList, StyleSheet, Switch, Text, TouchableOpacity, View, } from "react-native";
+import {
+  FlatList,
+  Image,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 const medications = [
-  { 
-    id: "1", 
-    name: "Metformin", 
-    dosage: "500mg", 
+  {
+    id: "1",
+    name: "Metformin",
+    dosage: "500mg",
     expiryDate: new Date(2025, 11, 15), // Dec 15, 2025
-    status: "Safe"
+    image: require("../../assets/images/icon.jpg"),
   },
-  { 
-    id: "2", 
-    name: "Lisinopril", 
-    dosage: "10mg", 
+  {
+    id: "2",
+    name: "Lisinopril",
+    dosage: "10mg",
     expiryDate: new Date(2025, 8, 14), // Sep 14, 2025
-    status: "Expiring in a Few Days"
+    image: require("../../assets/images/icon.jpg"),
   },
-  { 
-    id: "3", 
-    name: "Aspirin", 
-    dosage: "81mg", 
+  {
+    id: "3",
+    name: "Aspirin",
+    dosage: "81mg",
     expiryDate: new Date(2024, 11, 20), // Dec 20, 2024
-    status: "Expired"
+    image: require("../../assets/images/icon.jpg"),
   },
-  { 
-    id: "4", 
-    name: "Vitamin D3", 
-    dosage: "1000IU", 
+  {
+    id: "4",
+    name: "Vitamin D3",
+    dosage: "1000IU",
     expiryDate: new Date(2025, 7, 29), // Aug 29, 2025
-    status: "Safe"
+    image: require("../../assets/images/icon.jpg"),
   },
-  { 
-    id: "5", 
-    name: "Atorvastatin", 
-    dosage: "20mg", 
+  {
+    id: "5",
+    name: "Atorvastatin",
+    dosage: "20mg",
     expiryDate: new Date(2025, 6, 15), // Jul 15, 2025
-    status: "Expiring in a Few Days"
+    image: require("../../assets/images/icon.jpg"),
   },
 ];
 
 const formatDate = (date: Date): string => {
-  return date.toLocaleDateString('en-US', { 
-    year: 'numeric', 
-    month: 'short', 
-    day: 'numeric' 
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
   });
 };
 
-const getStatusInfo = (expiryDate: Date): {status: string, daysLeft: number} => {
+// ✅ Fixed Expiry Text
+const getStatusInfo = (
+  expiryDate: Date
+): { status: string; daysLeft: number } => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
+
   const expiry = new Date(expiryDate);
   expiry.setHours(0, 0, 0, 0);
-  
+
   const diffTime = expiry.getTime() - today.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  
-  if (diffDays < 0) return {status: "Expired", daysLeft: 0};
-  if (diffDays <= 7) return {status: `Expiring in ${diffDays} day${diffDays !== 1 ? 's' : ''}`, daysLeft: diffDays};
-  return {status: "Safe", daysLeft: diffDays};
+
+  if (diffDays < 0) return { status: "Expired", daysLeft: 0 };
+  if (diffDays === 0) return { status: "Expires Today", daysLeft: 0 };
+  if (diffDays <= 7)
+    return {
+      status: `Expiring in ${diffDays} day${diffDays !== 1 ? "s" : ""}`,
+      daysLeft: diffDays,
+    };
+  return { status: "Safe", daysLeft: diffDays };
 };
 
 export default function ExpiryMonitor() {
   const [filter, setFilter] = useState<string>("All");
   const [expiryAlerts, setExpiryAlerts] = useState<boolean>(true);
 
-  const updatedMeds = medications.map(med => ({
+  const updatedMeds = medications.map((med) => ({
     ...med,
-    ...getStatusInfo(med.expiryDate)
+    ...getStatusInfo(med.expiryDate),
   }));
 
-  const filteredMeds = updatedMeds.filter(med => {
+  const filteredMeds = updatedMeds.filter((med) => {
     if (filter === "All") return true;
-    if (filter === "Expiring Soon") return med.status.startsWith("Expiring in");
+    if (filter === "Expiring Soon") return med.status.startsWith("Expiring") || med.status === "Expires Today";
     if (filter === "Expired") return med.status === "Expired";
     return true;
   });
 
   const getStatusStyle = (status: string) => {
     if (status === "Expired") return styles.expiredStatus;
+    if (status === "Expires Today") return styles.expiringStatus;
     if (status.startsWith("Expiring in")) return styles.expiringStatus;
     return styles.safeStatus;
   };
 
   const getStatusEmoji = (status: string): string => {
     if (status === "Expired") return "💀";
+    if (status === "Expires Today") return "❗";
     if (status.startsWith("Expiring in")) return "❗";
     return "✔";
   };
@@ -95,35 +113,58 @@ export default function ExpiryMonitor() {
     <LinearGradient colors={["#667eea", "#764ba2"]} style={styles.container}>
       <Text style={styles.header}>Medication Expiry Monitor</Text>
 
+      {/* ✅ Filter Buttons */}
       <View style={styles.filterContainer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.filterButton, filter === "All" && styles.activeFilter]}
           onPress={() => setFilter("All")}
         >
-          <Text style={[styles.filterText, filter === "All" && styles.activeFilterText]}>
+          <Text
+            style={[
+              styles.filterText,
+              filter === "All" && styles.activeFilterText,
+            ]}
+          >
             All
           </Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.filterButton, filter === "Expiring Soon" && styles.activeFilter]}
+
+        <TouchableOpacity
+          style={[
+            styles.filterButton,
+            filter === "Expiring Soon" && styles.activeFilter,
+          ]}
           onPress={() => setFilter("Expiring Soon")}
         >
-          <Text style={[styles.filterText, filter === "Expiring Soon" && styles.activeFilterText]}>
+          <Text
+            style={[
+              styles.filterText,
+              filter === "Expiring Soon" && styles.activeFilterText,
+            ]}
+          >
             Expiring Soon
           </Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.filterButton, filter === "Expired" && styles.activeFilter]}
+
+        <TouchableOpacity
+          style={[
+            styles.filterButton,
+            filter === "Expired" && styles.activeFilter,
+          ]}
           onPress={() => setFilter("Expired")}
         >
-          <Text style={[styles.filterText, filter === "Expired" && styles.activeFilterText]}>
+          <Text
+            style={[
+              styles.filterText,
+              filter === "Expired" && styles.activeFilterText,
+            ]}
+          >
             Expired
           </Text>
         </TouchableOpacity>
       </View>
 
+      {/* ✅ Medication Cards with Images */}
       <FlatList
         data={filteredMeds}
         keyExtractor={(item) => item.id}
@@ -132,23 +173,33 @@ export default function ExpiryMonitor() {
         renderItem={({ item }) => (
           <View style={styles.medCard}>
             <View style={styles.medHeader}>
-              <Text style={styles.medName}>{item.name}</Text>
+              <View style={styles.medInfo}>
+                <Image source={item.image} style={styles.image} />
+                <View>
+                  <Text style={styles.medName}>{item.name}</Text>
+                  <Text style={styles.dosage}>{item.dosage}</Text>
+                </View>
+              </View>
               <View style={[styles.statusPill, getStatusStyle(item.status)]}>
                 <Text style={styles.statusText}>
                   {item.status} {getStatusEmoji(item.status)}
                 </Text>
               </View>
             </View>
-            
-            <Text style={styles.dosage}>{item.dosage}</Text>
+
             <Text style={styles.expiry}>
-              {item.status === "Expired" ? "Expired: " : "Expires: "}
-              {formatDate(item.expiryDate)}
+              {item.status === "Expired"
+                ? "Expired: "
+                : item.status === "Expires Today"
+                ? "Expires Today"
+                : "Expires: "}
+              {item.status !== "Expires Today" && formatDate(item.expiryDate)}
             </Text>
           </View>
         )}
       />
 
+      {/* ✅ Expiry Alert Toggle */}
       <View style={styles.alertContainer}>
         <Text style={styles.alertText}>Enable Expiry Alerts</Text>
         <Switch
@@ -222,6 +273,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 8,
   },
+  medInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  image: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    marginRight: 14,
+  },
   medName: {
     fontSize: 20,
     fontFamily: "SpaceMono",
@@ -252,12 +313,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "SpaceMono",
     color: "#666",
-    marginBottom: 4,
   },
   expiry: {
     fontSize: 14,
     fontFamily: "SpaceMono",
     color: "#888",
+    marginTop: 6,
   },
   alertContainer: {
     flexDirection: "row",

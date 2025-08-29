@@ -2,6 +2,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import {
   FlatList,
+  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -15,6 +16,7 @@ const upcomingMeds = [
     time: "8:00 AM",
     name: "Metformin",
     dosage: "500mg",
+    image: require("../../assets/images/icon.jpg"), // ✅ Added image
   },
   {
     id: "2",
@@ -22,6 +24,7 @@ const upcomingMeds = [
     time: "12:00 PM",
     name: "Amlodipine",
     dosage: "10mg",
+    image: require("../../assets/images/icon.jpg"), // ✅ Added image
   },
   {
     id: "3",
@@ -29,6 +32,7 @@ const upcomingMeds = [
     time: "7:30 AM",
     name: "Lisinopril",
     dosage: "20mg",
+    image: require("../../assets/images/icon.jpg"), // ✅ Added image
   },
   {
     id: "4",
@@ -36,6 +40,7 @@ const upcomingMeds = [
     time: "9:00 PM",
     name: "Atorvastatin",
     dosage: "20mg",
+    image: require("../../assets/images/icon.jpg"), // ✅ Added image
   },
 ];
 
@@ -82,8 +87,14 @@ export default function Schedule() {
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.name}>{item.name}</Text>
-            <Text style={styles.dosage}>{item.dosage}</Text>
+            {/* ✅ Image + Medicine Info */}
+            <View style={styles.medicineInfo}>
+              <Image source={item.image} style={styles.image} />
+              <View style={styles.textContainer}>
+                <Text style={styles.name}>{item.name}</Text>
+                <Text style={styles.dosage}>{item.dosage}</Text>
+              </View>
+            </View>
           </View>
         )}
         showsVerticalScrollIndicator={false}
@@ -133,18 +144,31 @@ const styles = StyleSheet.create({
     color: "#2563eb",
     fontWeight: "bold",
   },
+  medicineInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 12,
+  },
+  image: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    marginRight: 14,
+  },
+  textContainer: {
+    flex: 1,
+  },
   name: {
     fontSize: 20,
     fontFamily: "SpaceMono",
     fontWeight: "bold",
-    marginTop: 10,
     color: "#333",
   },
   dosage: {
     fontSize: 16,
     fontFamily: "SpaceMono",
     color: "#666",
-    marginTop: 4,
+    marginTop: 2,
   },
   statusButton: {
     paddingVertical: 6,

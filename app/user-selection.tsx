@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { StyleSheet, Text, TouchableOpacity } from "react-native";
+import { Platform, StyleSheet, Text, TouchableOpacity } from "react-native";
 
 export default function UserSelection() {
   const router = useRouter();
@@ -55,9 +55,23 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     textAlign: "center",
     fontWeight: "bold",
-    textShadowColor: 'rgba(255, 255, 255, 0.4)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: 'rgba(255, 255, 255, 0.4)',
+        shadowOffset: { width: 1, height: 1 },
+        shadowOpacity: 1,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 2,
+        textShadowColor: 'rgba(255, 255, 255, 0.4)',
+        textShadowOffset: { width: 1, height: 1 },
+        textShadowRadius: 2,
+      },
+      web: {
+        textShadow: '1px 1px 2px rgba(255, 255, 255, 0.4)',
+      },
+    }),
   },
   subtitle: {
     fontSize: 18,
@@ -66,9 +80,23 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 40,
     fontWeight: "600",
-    textShadowColor: 'rgba(255, 255, 255, 0.4)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: 'rgba(255, 255, 255, 0.4)',
+        shadowOffset: { width: 1, height: 1 },
+        shadowOpacity: 1,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 2,
+        textShadowColor: 'rgba(255, 255, 255, 0.4)',
+        textShadowOffset: { width: 1, height: 1 },
+        textShadowRadius: 2,
+      },
+      web: {
+        textShadow: '1px 1px 2px rgba(255, 255, 255, 0.4)',
+      },
+    }),
   },
   button: {
     backgroundColor: "#fff",
@@ -79,6 +107,13 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     width: "85%",
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.23,
+    shadowRadius: 2.62,
   },
   buttonText: {
     fontSize: 18,
