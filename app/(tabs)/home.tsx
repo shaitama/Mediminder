@@ -1,15 +1,7 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
-import {
-  FlatList,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { FlatList, Image, Modal, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View, } from "react-native";
 
-// Sample Data
 const meds = [
   { 
     id: "1", 
@@ -36,8 +28,9 @@ const meds = [
 
 export default function Home() {
   const [status, setStatus] = useState<{ [key: string]: string }>({});
+  const [zoomImage, setZoomImage] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
 
-  // Handle cycling between statuses
   const handlePress = (id: string) => {
     setStatus((prev) => {
       const current = prev[id];
@@ -45,6 +38,21 @@ export default function Home() {
       if (current === "Missed") return { ...prev, [id]: "Take Now" };
       return { ...prev, [id]: "Taken" };
     });
+  };
+
+  interface Medication {
+    id: string;
+    time: string;
+    name: string;
+    dosage: string;
+    image: any | null;
+  }
+
+  const handleImagePress = (image: Medication["image"]): void => {
+    if (image) {
+      setZoomImage(image);
+      setModalVisible(true);
+    }
   };
 
   return (
@@ -76,9 +84,10 @@ export default function Home() {
               </View>
 
               <View style={styles.medicationInfo}>
-                {/* Display medication image if available */}
                 {item.image ? (
-                  <Image source={item.image} style={styles.medicationImage} />
+                  <TouchableOpacity onPress={() => handleImagePress(item.image)}>
+                    <Image source={item.image} style={styles.medicationImage} />
+                  </TouchableOpacity>
                 ) : (
                   <View style={styles.placeholderImage}>
                     <Text style={styles.placeholderText}>💊</Text>
@@ -94,6 +103,20 @@ export default function Home() {
           );
         }}
       />
+
+      <Modal
+        visible={modalVisible}
+        transparent={true}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
+          <View style={styles.modalContainer}>
+            {zoomImage && (
+              <Image source={zoomImage} style={styles.zoomedImage} />
+            )}
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </LinearGradient>
   );
 }
@@ -192,5 +215,16 @@ const styles = StyleSheet.create({
   },
   missed: {
     backgroundColor: "#dc3545",
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+  },
+  zoomedImage: {
+    width: "90%",
+    height: "70%",
+    resizeMode: "contain",
   },
 });

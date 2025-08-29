@@ -1,14 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
-import {
-  FlatList,
-  Image,
-  StyleSheet,
-  Switch,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { FlatList, Image, Modal, StyleSheet, Switch, Text, TouchableOpacity, TouchableWithoutFeedback, View, } from "react-native";
 
 const medications = [
   {
@@ -56,7 +48,6 @@ const formatDate = (date: Date): string => {
   });
 };
 
-// ✅ Fixed Expiry Text
 const getStatusInfo = (
   expiryDate: Date
 ): { status: string; daysLeft: number } => {
@@ -82,6 +73,8 @@ const getStatusInfo = (
 export default function ExpiryMonitor() {
   const [filter, setFilter] = useState<string>("All");
   const [expiryAlerts, setExpiryAlerts] = useState<boolean>(true);
+  const [zoomImage, setZoomImage] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
 
   const updatedMeds = medications.map((med) => ({
     ...med,
@@ -109,11 +102,30 @@ export default function ExpiryMonitor() {
     return "✔";
   };
 
+  interface Medication {
+    id: string;
+    name: string;
+    dosage: string;
+    expiryDate: Date;
+    image: any;
+  }
+
+  interface StatusInfo {
+    status: string;
+    daysLeft: number;
+  }
+
+  const handleImagePress = (image: Medication["image"]): void => {
+    if (image) {
+      setZoomImage(image);
+      setModalVisible(true);
+    }
+  };
+
   return (
     <LinearGradient colors={["#667eea", "#764ba2"]} style={styles.container}>
       <Text style={styles.header}>Medication Expiry Monitor</Text>
 
-      {/* ✅ Filter Buttons */}
       <View style={styles.filterContainer}>
         <TouchableOpacity
           style={[styles.filterButton, filter === "All" && styles.activeFilter]}
@@ -164,7 +176,6 @@ export default function ExpiryMonitor() {
         </TouchableOpacity>
       </View>
 
-      {/* ✅ Medication Cards with Images */}
       <FlatList
         data={filteredMeds}
         keyExtractor={(item) => item.id}
@@ -174,7 +185,9 @@ export default function ExpiryMonitor() {
           <View style={styles.medCard}>
             <View style={styles.medHeader}>
               <View style={styles.medInfo}>
-                <Image source={item.image} style={styles.image} />
+                <TouchableOpacity onPress={() => handleImagePress(item.image)}>
+                  <Image source={item.image} style={styles.image} />
+                </TouchableOpacity>
                 <View>
                   <Text style={styles.medName}>{item.name}</Text>
                   <Text style={styles.dosage}>{item.dosage}</Text>
@@ -199,7 +212,6 @@ export default function ExpiryMonitor() {
         )}
       />
 
-      {/* ✅ Expiry Alert Toggle */}
       <View style={styles.alertContainer}>
         <Text style={styles.alertText}>Enable Expiry Alerts</Text>
         <Switch
@@ -209,6 +221,20 @@ export default function ExpiryMonitor() {
           thumbColor={expiryAlerts ? "#f5dd4b" : "#f4f3f4"}
         />
       </View>
+
+      <Modal
+        visible={modalVisible}
+        transparent={true}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
+          <View style={styles.modalContainer}>
+            {zoomImage && (
+              <Image source={zoomImage} style={styles.zoomedImage} />
+            )}
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </LinearGradient>
   );
 }
@@ -334,5 +360,16 @@ const styles = StyleSheet.create({
     fontFamily: "SpaceMono",
     fontWeight: "bold",
     color: "#764ba2",
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+  },
+  zoomedImage: {
+    width: "90%",
+    height: "70%",
+    resizeMode: "contain",
   },
 });

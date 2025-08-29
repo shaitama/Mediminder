@@ -3,19 +3,7 @@ import * as FileSystem from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
-import {
-  Alert,
-  ColorValue,
-  Image,
-  Modal,
-  Platform,
-  TextInput as RNTextInput,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
-} from "react-native";
+import { Alert, ColorValue, Image, Modal, Platform, TextInput as RNTextInput, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function AddMedication() {
   const [medicationName, setMedicationName] = useState<string>("");
@@ -61,7 +49,6 @@ export default function AddMedication() {
   };
 
   const pickImage = async (): Promise<void> => {
-    // Request permissions
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     
     if (status !== 'granted') {
@@ -69,7 +56,6 @@ export default function AddMedication() {
       return;
     }
 
-    // Launch image picker
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
@@ -83,7 +69,6 @@ export default function AddMedication() {
   };
 
   const takePhoto = async (): Promise<void> => {
-    // Request permissions
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     
     if (status !== 'granted') {
@@ -91,7 +76,6 @@ export default function AddMedication() {
       return;
     }
 
-    // Launch camera
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
       aspect: [4, 3],
@@ -119,8 +103,7 @@ export default function AddMedication() {
     const finalFrequency: string = frequency === "Custom" 
       ? `Every ${customInterval} ${customIntervalUnit}` 
       : frequency;
-    
-    // If there's an image, convert it to base64 for storage
+
     let imageBase64 = null;
     if (medicineImage) {
       try {
@@ -145,8 +128,7 @@ export default function AddMedication() {
 
     console.log("Medication Added:", medicationData);
     alert("Medication successfully added!");
-    
-    // Reset form
+
     setMedicationName("");
     setDosage(null);
     setDosageUnit("mg");
@@ -216,7 +198,6 @@ export default function AddMedication() {
           </View>
         </View>
 
-        {/* Medicine Image Section - Moved below medication name */}
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Medicine Image (optional)</Text>
           <View style={styles.imageContainer}>

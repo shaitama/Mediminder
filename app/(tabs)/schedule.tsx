@@ -1,13 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
-import {
-  FlatList,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { FlatList, Image, Modal, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View, } from "react-native";
 
 const upcomingMeds = [
   {
@@ -16,7 +9,7 @@ const upcomingMeds = [
     time: "8:00 AM",
     name: "Metformin",
     dosage: "500mg",
-    image: require("../../assets/images/icon.jpg"), // ✅ Added image
+    image: require("../../assets/images/icon.jpg"),
   },
   {
     id: "2",
@@ -24,7 +17,7 @@ const upcomingMeds = [
     time: "12:00 PM",
     name: "Amlodipine",
     dosage: "10mg",
-    image: require("../../assets/images/icon.jpg"), // ✅ Added image
+    image: require("../../assets/images/icon.jpg"),
   },
   {
     id: "3",
@@ -32,7 +25,7 @@ const upcomingMeds = [
     time: "7:30 AM",
     name: "Lisinopril",
     dosage: "20mg",
-    image: require("../../assets/images/icon.jpg"), // ✅ Added image
+    image: require("../../assets/images/icon.jpg"),
   },
   {
     id: "4",
@@ -40,12 +33,14 @@ const upcomingMeds = [
     time: "9:00 PM",
     name: "Atorvastatin",
     dosage: "20mg",
-    image: require("../../assets/images/icon.jpg"), // ✅ Added image
+    image: require("../../assets/images/icon.jpg"),
   },
 ];
 
 export default function Schedule() {
   const [status, setStatus] = useState<{ [key: string]: string }>({});
+  const [zoomImage, setZoomImage] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
 
   const handlePress = (id: string) => {
     setStatus((prev) => {
@@ -54,6 +49,22 @@ export default function Schedule() {
       if (current === "Missed") return { ...prev, [id]: "Take Now" };
       return { ...prev, [id]: "Taken" };
     });
+  };
+
+  interface UpcomingMed {
+    id: string;
+    date: string;
+    time: string;
+    name: string;
+    dosage: string;
+    image: any;
+  }
+
+  const handleImagePress = (image: UpcomingMed["image"]): void => {
+    if (image) {
+      setZoomImage(image);
+      setModalVisible(true);
+    }
   };
 
   return (
@@ -87,9 +98,10 @@ export default function Schedule() {
               </TouchableOpacity>
             </View>
 
-            {/* ✅ Image + Medicine Info */}
             <View style={styles.medicineInfo}>
-              <Image source={item.image} style={styles.image} />
+              <TouchableOpacity onPress={() => handleImagePress(item.image)}>
+                <Image source={item.image} style={styles.image} />
+              </TouchableOpacity>
               <View style={styles.textContainer}>
                 <Text style={styles.name}>{item.name}</Text>
                 <Text style={styles.dosage}>{item.dosage}</Text>
@@ -99,6 +111,20 @@ export default function Schedule() {
         )}
         showsVerticalScrollIndicator={false}
       />
+
+      <Modal
+              visible={modalVisible}
+              transparent={true}
+              onRequestClose={() => setModalVisible(false)}
+            >
+              <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
+                <View style={styles.modalContainer}>
+                  {zoomImage && (
+                    <Image source={zoomImage} style={styles.zoomedImage} />
+                  )}
+                </View>
+              </TouchableWithoutFeedback>
+            </Modal>
     </LinearGradient>
   );
 }
@@ -189,5 +215,16 @@ const styles = StyleSheet.create({
   },
   missed: {
     backgroundColor: "#dc3545",
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+  },
+  zoomedImage: {
+    width: "90%",
+    height: "70%",
+    resizeMode: "contain",
   },
 });
